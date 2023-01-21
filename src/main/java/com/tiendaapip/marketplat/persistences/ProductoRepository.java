@@ -1,46 +1,62 @@
 package com.tiendaapip.marketplat.persistences;
 
-import com.tiendaapip.marketplat.persistences.crud.EntityRepository;
+import com.tiendaapip.marketplat.domain.model.Product;
+import com.tiendaapip.marketplat.domain.repository.ProductRepository;
 import com.tiendaapip.marketplat.persistences.crud.ProductoJpaRepository;
 import com.tiendaapip.marketplat.persistences.entity.Producto;
+import com.tiendaapip.marketplat.persistences.mapper.ProductMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class ProductoRepository implements EntityRepository
+public class ProductoRepository implements ProductRepository
 {
     private final ProductoJpaRepository productoJpaRepository;
+    private ProductMapper productMapper;
 
     public ProductoRepository(ProductoJpaRepository productoJpaRepository)
     {
         this.productoJpaRepository = productoJpaRepository;
     }
 
+    public List<Product> getAll() {
+        List<Producto> productos = productoJpaRepository.findAll();
+        return productMapper.toProducts(productos);
+    }
+
     @Override
-    public List<Producto> getAll() {
-        return productoJpaRepository.findAll();
+    public Optional<List<Product>> getByCategory(Long category)
+    {
+        List<Producto> productos = productoJpaRepository.findByIdCategoriaOrderByNombreAsc(category);
+
+        return Optional.of(productMapper.toProducts(productos));
     }
 
-    public List<Producto> getByCategoria(Long idCategoria)
+    @Override
+    public Optional<List<Product>> getScarseProducts(Integer quantity)
     {
-        return productoJpaRepository.findByIdCategoriaOrderByNombreAsc(idCategoria);
+        Optional<List<Producto>> productos = productoJpaRepository.findByCantidadStockLessThanAndEstado(quantity,true);
+
+        return productos.map(prods-> productMapper.toProducts(prods));
     }
 
-    Optional<List<Producto>> getEscasos(Integer cantidadStock)
+    @Override
+    public Optional<Product> getProduct(Long productId)
     {
-        return  productoJpaRepository.findByCantidadStockLessThanAndEstado(cantidadStock,true);
+        //.findById devuelve un optional, y una de sus funciones en map de optional que devielve un optional
+        return productoJpaRepository.findById(productId).map(producto -> productMapper.toProduct(producto));
     }
 
-    public Optional<Producto> getProducto(Long idProducto)
+    @Override
+    public Product save(Product product)
     {
-        return productoJpaRepository.findById(idProducto);
-    }
+        //convertir un product y guardar un producto
+        Producto producto = productMapper.toProducto(product);
 
-    public Producto save(Producto producto)
-    {
-        return productoJpaRepository.save(producto);
+        //despues de guardar un producto convertimos a un product
+        return productMapper.toProduct(productoJpaRepository.save(producto));
     }
 
     public void delete(Long idProducto)
