@@ -1,4 +1,4 @@
-package com.tiendaapip.marketplat.infrastructure.entity;
+package com.tiendaapip.marketplat.persistences.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
